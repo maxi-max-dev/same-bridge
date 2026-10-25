@@ -1,1 +1,28 @@
-<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#162d35"><title>一拍之遥 · 双人，一双手</title><link rel="stylesheet" href="style.css?v=3"></head><body><main><header><a href="../courtyard/">← 其他原型</a><span>水庭 · 合作试玩</span><button id="sound">声音 关</button></header><div class="intro"><span class="eyebrow">TWO LIGHTS · ONE RHYTHM</span><h1>一拍之遥</h1><p>你的这一步，是它的下一步。</p></div><nav id="levels" aria-label="选择房间"></nav><section class="stage"><div class="room"><div><span id="chapter"></span><h2 id="name"></h2></div><span id="count">0 拍</span></div><div class="queue"><span><i class="orange"></i>A 橙光 · 现在走</span><span class="thread">→</span><span><i class="blue"></i>B 蓝光 · <b id="pending">等一拍</b></span></div><div class="world-wrap"><svg id="world" viewBox="0 0 560 490" role="img" aria-label="双光机关地图"></svg><div id="ending" hidden><span>TOGETHER</span><h2>这次，我们配合上了。</h2><p id="endtext"></p><button id="next">下一个房间 →</button><button id="replay">再试一次</button></div></div><p id="message" role="status" aria-live="polite"></p><div class="controls"><div class="pad"><button data-d="U" aria-label="向上">↑</button><button data-d="L" aria-label="向左">←</button><button data-d="D" aria-label="向下">↓</button><button data-d="R" aria-label="向右">→</button></div><button data-d="W" class="wait">Ⅱ <span>等一拍<small>让上一步抵达</small></span></button></div><div class="tools"><button id="undo">↶ 撤销</button><button id="hint">一点提示</button><button id="restart">↻ 重来</button></div></section><details><summary>只记住这三个规则</summary><p>① 方向键控制橙光，蓝光执行上一拍的方向。蓝光旁的虚线圈就是它下一拍的位置。</p><p>② 踩住对应形状的机关会开门；离开后仍保持一拍。碰墙或关闭的门只会停住，但方向仍会传给蓝光。</p><p>新机关：标有「留门」的机关踩过后永久开门；标有「双灯」的两个灯座分别点亮后才开门，点亮会保留。</p><p>③ 两人都进入右侧小亭即过关。先到的留在亭里，仍可传递指令。空格等一拍，Z 撤销。没有时间限制。</p></details><footer>先别追求最快。试着找到一次漂亮的配合。</footer></main><script src="engine.js?v=3"></script><script src="art.js?v=3"></script><script src="app.js?v=3"></script></body></html>
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#dce8e4">
+  <title>一拍之遥 · 水庭与默契</title><link rel="stylesheet" href="style.css?v=4">
+</head>
+<body><main>
+  <header><a href="../courtyard/">← 其他原型</a><span>水庭 · 合作试玩</span><button id="sound" aria-pressed="false">声音 关</button></header>
+  <div class="intro"><span class="eyebrow">TWO LIGHTS · ONE RHYTHM</span><h1>一拍之遥</h1><p>你的这一步，是它的下一步。</p></div>
+  <div class="chapters" aria-label="选择章节"><button data-chapter="1">初遇 <small>1—7</small></button><button data-chapter="2">默契 <small>8—11</small></button></div>
+  <nav id="levels" aria-label="选择房间"></nav>
+  <section class="stage">
+    <div class="room"><div><span id="chapter"></span><h2 id="name"></h2></div><span id="count">0 拍</span></div>
+    <div class="queue"><span><i class="orange"></i>A 橙光 · 现在走</span><span class="thread">→</span><span><i class="blue"></i>B 蓝光 · <b id="pending">等一拍</b></span></div>
+    <div class="world-wrap">
+      <svg id="world" viewBox="0 25 560 405" role="img" aria-label="双光机关地图"></svg>
+      <div id="ending" hidden><span>TOGETHER</span><h2>这次，我们配合上了。</h2><p id="endtext"></p><button id="next">下一个房间 →</button><button id="replay">再试一次</button></div>
+    </div>
+    <div id="legend" class="legend" hidden><span>实线光环 · 正在照看</span><span>余 1 拍 · 还能通过一次行动</span></div>
+    <p id="message" role="status" aria-live="polite"></p>
+    <div class="controls"><div class="pad"><button data-d="U" aria-label="向上">↑</button><button data-d="L" aria-label="向左">←</button><button data-d="D" aria-label="向下">↓</button><button data-d="R" aria-label="向右">→</button></div><button data-d="W" class="wait">Ⅱ <span>等一拍<small>让上一步抵达</small></span></button></div>
+    <div class="tools"><button id="undo">↶ 撤销</button><button id="hint" aria-expanded="false" aria-controls="hint-panel">给我一点思路</button><button id="restart">↻ 重来</button></div>
+    <aside id="hint-panel" class="hint-panel" hidden aria-label="逐层提示"><div class="hint-heading"><span id="hint-label">想一想</span><button id="hint-close" aria-label="收起提示">×</button></div><p id="hint-text" aria-live="polite"></p><button id="hint-more">再给一点线索</button></aside>
+  </section>
+  <details><summary>操作与机关说明</summary><p>① 方向控制橙光，蓝光执行上一拍的方向。蓝光旁的虚线圈就是它下一拍的位置。</p><p>② 踩住对应颜色、形状的机关会开门；离开后仍保持一拍。碰墙或关闭的门只会停住，但方向仍传给蓝光。长闸门的各段由同一个机关控制。</p><p>标有「留门」的机关踩过后永久开门；标有「双灯」的两个灯座分别点亮后才开门，点亮会保留。</p><p>③ 两人都进入各自的小亭即过关。先到的留在亭里，仍可传递指令。空格等一拍，Z 撤销，没有时间限制。</p><p>完成记录只存在当前浏览器，可自由选关。提示先给思路，再给观察线索；你选择后才显示下一步。</p></details>
+  <footer>一个人停下，另一个人也可以向前。</footer>
+</main><script src="engine.js?v=4"></script><script src="art.js?v=4"></script><script src="app.js?v=4"></script></body></html>
