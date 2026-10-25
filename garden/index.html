@@ -1,0 +1,11 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#e9e5f4"><title>花间一拍 · 两种花园</title><link rel="stylesheet" href="style.css"></head><body>
+<div class="scenery" aria-hidden="true"><i></i><i></i><i></i></div>
+<main><header><a href="../courtyard/" class="back">← 小庭院</a><button id="sound" class="quiet" aria-pressed="false">声音 关</button></header>
+<div class="title"><span class="eyebrow">A LITTLE GARDEN, ONE MORE BLOOM</span><h1>花间一拍<span>两种花园</span></h1><p>点一簇花，让整个花园醒来。</p></div>
+<nav aria-label="试玩版本"><button data-mode="classic" class="selected">普通花园<small>轻轻一点，簇簇开放</small></button><button data-mode="echo">回声花园<small>上一拍，再开一次花</small></button></nav>
+<section class="game" aria-label="花园消除"><div class="stats"><div><span>已收集花光</span><strong id="score">0</strong></div><div class="steps"><strong id="moves">20</strong><span>步</span></div><div class="progress"><i id="progress"></i></div></div>
+<div class="instruction" id="instruction">点相连的 2 朵同色花 · 5 朵一起，收下所有同色</div>
+<div class="garden-frame"><div class="board" id="board" role="group" aria-label="六乘六花圃"></div><div id="float" aria-hidden="true"></div><div class="finished" id="finished" hidden><span class="eyebrow">YOUR GARDEN IN BLOOM</span><h2>这一园，盛开了。</h2><p id="result"></p><button id="other" class="primary">同一花园，试试另一版</button><button id="again" class="secondary">再种一园</button><p class="note">两版得分分开记，更重要的是哪版让你想再来。</p></div></div>
+<div class="feedback" id="feedback" role="status" aria-live="polite">从有两朵相连的地方开始。</div><div class="toolbar"><button id="undo">↶ 撤销</button><button id="restart">↻ 重玩本园</button><button id="new">✦ 新花园</button></div></section>
+<footer><span id="seed"></span><span id="best"></span></footer><details><summary>怎么玩 · 两版有什么不同</summary><p>上下左右相连的同色花，至少 2 朵才能收集。一次连到 5 朵，会收集全园同色花。每次有效点击用 1 步，共 20 步；点单朵不扣步。</p><p>回声版：从第二次有效点击起，上一拍的位置会在本次补花后，额外收集十字范围的花。虚线圈提前显示范围，中心小月亮标出来源。最后一步也会执行上一拍回声，但不再储存下一拍。切换版本会用相同种子从头开始；后续花圃随你的操作不同而变化。</p><p>撤销不受次数限制。成绩只保存在这台浏览器，不上传数据。</p></details><p class="signature">给一朵花一点时间，给自己再来一局。</p></main>
+<script src="engine.js"></script><script src="app.js"></script></body></html>
