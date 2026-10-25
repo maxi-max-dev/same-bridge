@@ -2,3 +2,4 @@
 .cell{min-width:0;min-height:0;overflow:visible}.cell:disabled,nav button:disabled{opacity:1}.board{grid-template-columns:repeat(6,minmax(0,1fr))}.cell svg{display:block}
 @media(max-height:800px){main{padding-top:12px}.title{margin:12px 0}h1{font-size:31px;margin:6px 0}.title p{margin-top:7px}nav{margin-bottom:12px}.game{padding-top:13px}.title .eyebrow{font-size:8px}}
 @media(max-width:380px){.finished{padding:12px}.finished h2{font-size:21px;margin:10px 0 2px}.finished button{padding:10px 12px;margin-top:6px}.finished .note{margin:8px 0}.finished .eyebrow{font-size:8px;letter-spacing:1px}}
+@media(max-width:600px){main{padding-top:12px}.title{margin:12px 0 14px}.title .eyebrow{font-size:7px;letter-spacing:1.8px}h1{font-size:31px;margin:6px 0}h1 span{margin-top:5px}.title p{margin-top:8px}nav{margin-bottom:12px}nav button{padding:9px 5px}.game{padding-top:13px}.instruction{margin-bottom:12px}.feedback{padding-top:14px}}
