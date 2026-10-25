@@ -1,0 +1,11 @@
+const assert=require('node:assert/strict');
+const G=require('../duet/engine');const L=require('../duet/learn');const S=require('../duet/spirits');
+let s=G.initial(L.level);
+assert.equal(S.pose(s.steps,1).mode,'watch');
+s=L.step(s,'R');assert.equal(S.pose(s.steps,1).mode,'remember');assert.equal(s.last,'R');
+s=L.step(s,'W');assert.equal(S.pose(s.steps,1).mode,'help');assert(G.gateOpen(L.level,s,0));
+s=L.step(s,'R');assert.equal(S.pose(s.steps,0).mode,'help');assert(G.gateOpen(L.level,s,1));
+const beforeWait=s;s=L.step(s,'R');assert(G.dock(L.level,s,0));assert(!G.dock(L.level,s,1));assert.equal(S.pose(s.steps,0).turn,-1);assert.equal(S.pose(s.steps,0).mode,'waiting');
+assert.equal(S.pose(beforeWait.steps,0).mode,'help','undo returns to helping, not a stale waiting pose');
+s=L.step(s,'W');assert(G.won(L.level,s));assert.equal(S.pose(s.steps,0).mode,'joy');assert.equal(S.pose(s.steps,1).mode,'joy');
+console.log('PASS: look, remember, reciprocal help, turn back and wait, undo and shared arrival follow real game states.');
