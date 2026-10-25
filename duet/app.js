@@ -92,6 +92,10 @@ function render() {
     $('learn-title').textContent = cue.title;
     $('message').textContent = cue.text;
     $('learn-progress').textContent = `跟着试一试 · ${s.steps + 1} / ${L.steps.length}`;
+  } else if (learning && ended) {
+    $('learn-title').textContent = '它跟上你了，一起到家！';
+    $('learn-progress').textContent = '练习完成 · 5 / 5';
+    $('message').textContent = '一个先走，一个跟上；你替我开门，我也接你回家。';
   }
 }
 function drawNavigation() {
