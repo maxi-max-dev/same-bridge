@@ -1,14 +1,18 @@
 const G = Duet;
 const C = DuetChallenge;
+const L = DuetLearn;
 const $ = id => document.getElementById(id);
 const icons = { R: '→', L: '←', U: '↑', D: '↓', W: 'Ⅱ' };
-const words = { R: '向右', L: '向左', U: '向上', D: '向下', W: '等一拍' };
+const words = { R: '向右', L: '向左', U: '向上', D: '向下', W: '等待' };
 let level = 0, s, history = [], busy = false, sound = false, ctx, hintStage = 0, discovered = false;
+let learning = false, returnRoom = L.roomFrom(location.search), lessonSeen = null;
 let completed = [];
 let bests = {}, canSave = true;
 try { const value = JSON.parse(localStorage.getItem('duet-completed') || '[]'); if (Array.isArray(value)) completed = value.filter(i => Number.isInteger(i) && i >= 0 && i < G.levels.length); } catch {}
 try { bests = C.readBests(localStorage.getItem('duet-bests-v1')); } catch { canSave = false; }
-const l = () => G.levels[level];
+try { lessonSeen = localStorage.getItem('duet-learn-v1'); } catch {}
+const l = () => learning ? L.level : G.levels[level];
+const outcome = () => learning ? G.won(l(), s) ? 'won' : 'playing' : C.outcome(l(), s);
 const xy = p => [70 + p[0] * 70, 65 + p[1] * 55];
 const delay = ms => new Promise(resolve => setTimeout(resolve, matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : ms));
 
@@ -25,37 +29,42 @@ function shape(g, x, y, fill) {
   return g.shape === 'circle' ? `<circle cx="${x}" cy="${y}" r="12" fill="${fill}" stroke="#def1dc" stroke-width="2"/>` : `<path d="M${x} ${y - 15}l15 15-15 15-15-15Z" fill="${fill}" stroke="#def1dc" stroke-width="2"/>`;
 }
 function move(i, p) { const [x, y] = xy(p); $('actor' + i).style.transform = `translate(${x}px,${y}px)`; }
-function statusOfGate(g, j) {
-  if (g.kind === 'latch') return s.lit[j] ? '已留门' : '踩过留门';
-  if (g.kind === 'pair') return G.gateOpen(l(), s, j) ? '双灯已亮' : s.lit[j] ? '等另一盏' : '双灯';
-  return G.eq(g.owner ? s.b : s.a, g.plate) ? '照看中' : s.hold[j] ? '余 1 拍' : '未点亮';
+function statusOfGate(g, j, short = false) {
+  if (g.kind === 'latch') return s.lit[j] ? '已常开' : short ? '常开' : '踩一次常开';
+  if (g.kind === 'pair') return G.gateOpen(l(), s, j) ? '门已开' : short ? '双灯' : s.lit[j] ? '还差另一个机关' : '两处都踩过才开';
+  return G.eq(g.owner ? s.b : s.a, g.plate) ? '门已开' : s.hold[j] ? '再开1步' : short ? '门已关' : '踩住就开门';
 }
 function renderChallenge() {
+  if (learning) return;
   const t = C.targets(l()), left = Math.max(0, t.limit - s.steps);
-  $('count').textContent = `${s.steps} / ${t.limit} 拍`;
-  $('remaining').textContent = G.won(l(), s) ? '已到齐' : `剩余 ${left} 拍`;
+  $('count').textContent = `${s.steps} / ${t.limit} 步`;
+  $('remaining').textContent = G.won(l(), s) ? '两个都到家了' : `还能走 ${left} 步`;
   $('count').classList.toggle('low', left <= 2 && !G.won(l(), s));
-  $('optimal').textContent = `最优解 ${t.optimal} 拍`;
-  $('best').textContent = bests[level] ? `${canSave ? '个人' : '本次'}最佳 ${bests[level]} 拍 · ${'★'.repeat(C.stars(l(), bests[level]))}` : completed.includes(level) ? '已通关 · 再挑战记星' : '最佳 等你点亮';
+  $('optimal').textContent = `最优 ${t.optimal} 步`;
+  $('best').textContent = bests[level] ? `${canSave ? '个人' : '本次'}最佳 ${bests[level]} 步` : completed.includes(level) ? '已通关 · 再试试拿星' : '首次挑战';
   const labels = [[3, t.optimal, 'target-three'], [2, t.silver, 'target-two'], [1, t.limit, 'target-one']];
   labels.forEach(([stars, max, id]) => {
-    $(id).textContent = `${'★'.repeat(stars)} ${stars === 3 ? '' : '≤ '}${max} 拍`;
+    $(id).textContent = `${'★'.repeat(stars)} ${stars === 3 ? '' : '≤ '}${max} 步`;
     $(id).classList.toggle('missed', s.steps > max);
   });
   $('beat-track').innerHTML = Array.from({ length: t.limit }, (_, i) => `<i class="${i < s.steps ? 'used ' : ''}${i >= t.optimal ? 'extra ' : ''}${i === t.optimal - 1 || i === t.silver - 1 ? 'milestone' : ''}"></i>`).join('');
 }
 function render() {
   move(0, s.a); move(1, s.b);
-  $('pending').textContent = G.dock(l(), s, 1) ? '已到达' : icons[s.last] + ' ' + words[s.last];
+  const dockA = G.dock(l(), s, 0), dockB = G.dock(l(), s, 1);
+  $('current').textContent = dockA ? '已到家 · 会停住' : '按方向就走';
+  $('pending').textContent = dockB ? '已到家 · 会停住' : s.steps === 0 ? '第一次先不动' : `下次 ${icons[s.last]} ${words[s.last]}`;
+  $('arrivals').textContent = `${Number(dockA) + Number(dockB)} / 2 到达`;
+  $('world').setAttribute('aria-label', `地图。橙灯在第${s.a[0] + 1}列第${s.a[1] + 1}行${dockA ? '，已到终点' : ''}；蓝灯在第${s.b[0] + 1}列第${s.b[1] + 1}行${dockB ? '，已到终点' : ''}。`);
   renderChallenge();
   l().gates.forEach((g, j) => {
     const occupied = G.eq(s.a, g.at) || G.eq(s.b, g.at);
     $('gate' + j).style.opacity = G.gateOpen(l(), s, j) || occupied ? '.08' : '1';
     $('lit' + j).setAttribute('opacity', (g.kind ? s.lit[j] : s.hold[j]) ? '.8' : '0');
-    if ($('gate-state' + j)) $('gate-state' + j).textContent = statusOfGate(g, j);
+    if ($('gate-state' + j)) $('gate-state' + j).textContent = statusOfGate(g, j, true);
     if ($('wire' + j)) $('wire' + j).classList.toggle('wire-on', G.gateOpen(l(), s, j));
   });
-  if (level >= 7) {
+  if (!learning) {
     const seen = new Set();
     $('legend').innerHTML = l().gates.map((g, j) => {
       const key = g.plate.join(','); if (seen.has(key)) return ''; seen.add(key);
@@ -67,12 +76,22 @@ function render() {
     const [x, y] = xy(n.b);
     $('ghost').innerHTML = `<circle class="ghost" cx="${x}" cy="${y}" r="22" fill="none" stroke="#377e8e" stroke-width="2"/><text x="${x + 24}" y="${y - 14}" fill="#377e8e" font-size="13">${icons[s.last]}</text>`;
   } else $('ghost').innerHTML = '';
-  const ended = C.outcome(l(), s) !== 'playing';
+  const ended = outcome() !== 'playing';
   document.querySelector('.world-wrap').classList.toggle('has-result', ended);
-  document.querySelectorAll('[data-d]').forEach(b => b.disabled = busy || ended);
+  const cue = learning ? L.steps[s.steps] : null;
+  document.querySelectorAll('[data-d]').forEach(b => {
+    b.disabled = busy || ended || (learning && b.dataset.d !== cue?.action);
+    b.classList.toggle('suggested', learning && !ended && b.dataset.d === cue?.action);
+  });
   $('undo').disabled = busy || !history.length;
   ['hint', 'restart', 'hint-more'].forEach(id => $(id).disabled = busy || (id !== 'restart' && ended));
   document.querySelectorAll('[data-l], [data-chapter]').forEach(b => b.disabled = busy);
+  ['learn-start', 'learn-skip', 'levels-toggle'].forEach(id => $(id).disabled = busy);
+  if (learning && cue) {
+    $('learn-title').textContent = cue.title;
+    $('message').textContent = cue.text;
+    $('learn-progress').textContent = `跟着试一试 · ${s.steps + 1} / ${L.steps.length}`;
+  }
 }
 function drawNavigation() {
   const chapter = level < 7 ? 1 : 2;
@@ -82,20 +101,43 @@ function drawNavigation() {
   $('levels').innerHTML = G.levels.map((a, j) => {
     if ((j < 7 ? 1 : 2) !== chapter) return '';
     const stars = bests[j] ? C.stars(a, bests[j]) : 0;
-    const record = stars ? ` ${stars}星 最佳${bests[j]}拍` : completed.includes(j) ? ' 已完成' : '';
+    const record = stars ? ` ${stars}星 最佳${bests[j]}步` : completed.includes(j) ? ' 已完成' : '';
     return `<button data-l="${j}" class="${j === level ? 'active' : ''}" aria-current="${j === level ? 'step' : 'false'}" aria-label="房间 ${j + 1} ${a.name}${record}"><span>${!stars && completed.includes(j) ? '<span class="done">✓</span> ' : ''}${j + 1} · ${a.short || ['跟上', '搭桥', '默契'][j]}</span><small class="nav-stars" aria-hidden="true">${'★'.repeat(stars)}${'☆'.repeat(3 - stars)}</small></button>`;
   }).join('');
   document.querySelectorAll('[data-l]').forEach(b => b.onclick = () => load(+b.dataset.l));
 }
 function hideHint() { $('hint-panel').hidden = true; $('hint').setAttribute('aria-expanded', 'false'); $('world').classList.remove('hint-focus'); }
+function setLearning(active) {
+  learning = active;
+  $('selection').hidden = true; $('levels-toggle').setAttribute('aria-expanded', 'false');
+  document.body.classList.toggle('learning', active);
+  ['learn-skip', 'learn-progress', 'learn-title'].forEach(id => $(id).hidden = !active);
+  $('hint').hidden = active;
+}
+function rememberLesson(value) {
+  lessonSeen = value;
+  try { localStorage.setItem('duet-learn-v1', value); } catch {}
+}
+function startLearning() {
+  if (busy) return;
+  returnRoom = level;
+  setLearning(true);
+  const u = new URL(location.href); u.searchParams.set('learn', '1'); window.history.replaceState(null, '', u);
+  s = G.initial(l()); history = []; $('ending').hidden = true; hideHint();
+  $('message').classList.remove('insight');
+  $('chapter').textContent = '新手练习 · 不计步数和星级';
+  $('name').textContent = l().name; $('legend').hidden = true;
+  draw(); render();
+}
 function load(i) {
   if (busy) return;
-  level = i; const u = new URL(location.href); u.searchParams.set('room', i + 1); window.history.replaceState(null, '', u);
+  setLearning(false);
+  level = i; const u = new URL(location.href); u.searchParams.set('room', i + 1); u.searchParams.delete('learn'); window.history.replaceState(null, '', u);
   s = G.initial(l()); history = []; hintStage = 0; discovered = false; $('message').classList.remove('insight');
   $('ending').hidden = true; hideHint();
   $('chapter').textContent = `${level < 7 ? '初遇' : '默契'} · 房间 ${String(i + 1).padStart(2, '0')} / ${G.levels.length}`;
-  $('name').textContent = l().name; $('message').textContent = l().intro || l().hint;
-  $('legend').hidden = level < 7;
+  $('name').textContent = l().name; $('message').textContent = DuetCopy[level].intro;
+  $('legend').hidden = !l().gates.length;
   drawNavigation(); draw(); render();
 }
 function insight(old, next, d) {
@@ -107,6 +149,22 @@ function insight(old, next, d) {
 }
 const oldEndings = ['会等待，也是一种配合。', '你替我开门，我替你铺路。', '墙没有挡住你们，它帮你们对上了节奏。', '留下的路，不必一直守着。', '两盏灯的光，合成一条路。', '先帮你过去，再接住你的帮助。', '有的帮助会留下，有的需要刚好一拍。'];
 function finish(result) {
+  if (learning) {
+    rememberLesson('done');
+    $('ending').hidden = false; $('ending').classList.remove('chase');
+    $('result-label').textContent = '两盏灯，互相帮了一次';
+    $('end-stars').hidden = true;
+    $('end-title').textContent = '一起到家了';
+    $('end-score').textContent = '你走现在这步，它走你上一次的操作。';
+    $('endtext').textContent = '踩机关能替对方开门；先到家也能继续帮它。接下来，自己试试。';
+    $('recover').hidden = true; $('next').hidden = false;
+    $('next').textContent = '从第 1 关开始 →';
+    $('replay').textContent = returnRoom ? `回到第 ${returnRoom + 1} 关` : '再练一遍';
+    $('learn-title').textContent = '已经一起开门、一起到家';
+    $('learn-progress').textContent = '练习完成 · 5 / 5';
+    $('message').textContent = '正式关卡会有步数和星级。随时可以退一步，看清两盏灯会怎么走。';
+    $('next').focus(); return;
+  }
   const t = C.targets(l()), won = result === 'won', stars = won ? C.stars(l(), s.steps) : 0;
   if (won) {
     if (!completed.includes(level)) completed.push(level);
@@ -116,56 +174,65 @@ function finish(result) {
   }
   $('ending').hidden = false;
   $('ending').classList.toggle('chase', won && stars < 3);
-  $('result-label').textContent = won ? 'TOGETHER' : 'TRY ANOTHER WAY';
+  $('result-label').textContent = won ? '一起到家' : '换个走法，再试一次';
   $('end-stars').hidden = !won;
   $('end-stars').innerHTML = Array.from({ length: 3 }, (_, i) => `<span class="${i < stars ? 'lit-star' : ''}">${i < stars ? '★' : '☆'}</span>`).join('');
   $('end-stars').setAttribute('aria-label', `${stars} 星`);
-  $('end-title').textContent = !won ? '这一轮，拍数用完了' : stars === 3 ? '这一拍，刚刚好。' : '配合上了，还能更默契。';
-  $('end-score').textContent = won ? `${s.steps} 拍通关 · 最优 ${t.optimal} 拍` : `已用 ${s.steps} / ${t.limit} 拍`;
-  $('endtext').textContent = won ? l().aha || oldEndings[level] : '可以撤销调整，或重来找一条更短的路线。';
+  $('end-title').textContent = !won ? '这轮的步数用完了' : stars === 3 ? '两盏灯到家，刚好三星！' : '两盏灯都到家了';
+  $('end-score').textContent = won ? `${s.steps} 步通关 · 最优 ${t.optimal} 步` : `已用 ${s.steps} / ${t.limit} 步`;
+  $('endtext').textContent = won ? l().aha || oldEndings[level] : '可以退几步调整，也可以重玩。不用赶时间。';
   $('recover').hidden = won; $('next').hidden = !won;
-  $('next').textContent = level === G.levels.length - 1 ? '回到第八关，再试一次' : '下一个房间 →';
-  $('replay').textContent = !won ? '重新挑战' : stars < 3 ? `再少 ${s.steps - (stars === 2 ? t.optimal : t.silver)} 拍，拿${stars === 2 ? '三' : '二'}星` : '再试一次';
+  $('next').textContent = level === G.levels.length - 1 ? '回到第八关，再试一次' : '下一关 →';
+  $('replay').textContent = !won ? '重新挑战' : stars < 3 ? `再少 ${s.steps - (stars === 2 ? t.optimal : t.silver)} 步，拿${stars === 2 ? '三' : '二'}星` : '再试一次';
   $(won ? stars === 3 ? 'next' : 'replay' : 'recover').focus();
 }
 async function act(d) {
-  if (busy) return; const n = C.step(l(), s, d); if (!n) return;
+  if (busy) return; const n = learning ? L.step(s, d) : C.step(l(), s, d); if (!n) return;
   history.push(s); busy = true; hideHint(); render();
-  $('message').textContent = `A ${words[d]}；B 接住上一拍的「${words[s.last]}」。`;
-  move(0, n.a); note(0); await delay(180); move(1, n.b); note(1); await delay(240);
+  $('message').textContent = `橙灯${G.dock(l(), s, 0) ? '已到家，停住' : words[d]}；蓝灯${s.steps ? `做上一次的「${words[s.last]}」` : '第一次先不动'}。`;
+  $('current').textContent = G.dock(l(), s, 0) ? '已到家 · 会停住' : `这次 ${icons[d]} ${words[d]}`;
+  $('pending').textContent = G.dock(l(), s, 1) ? '已到家 · 会停住' : s.steps ? `这次 ${icons[s.last]} ${words[s.last]}` : '第一次先不动';
+  $('role-orange').classList.add('acting'); move(0, n.a); note(0); await delay(learning ? 300 : 180);
+  $('role-orange').classList.remove('acting'); $('role-blue').classList.add('acting'); move(1, n.b); note(1); await delay(learning ? 380 : 240);
+  $('role-blue').classList.remove('acting');
   const prev = s; s = n; busy = false; render();
-  const result = C.outcome(l(), s);
+  const result = outcome();
   if (result !== 'playing') finish(result);
+  else if (learning) return;
   else if (!discovered && insight(prev, n, d)) {
     discovered = true; $('message').textContent = l().aha; $('message').classList.add('insight');
   } else {
     $('message').classList.remove('insight');
     if (s.lit.some((v, j) => v && !prev.lit[j] && l().gates[j].kind)) $('message').textContent = l().gates.some(g => g.kind === 'pair') ? '灯光已经留下。两盏都亮，门才会打开。' : '机关已锁定开启，不必再站着守门。';
     else if (s.passed.some((v, j) => v && !prev.passed[j])) $('message').textContent = '借着伙伴打开的门，过去了！';
-    else if (G.dock(l(), s, 0)) $('message').textContent = 'A 在亭里等你。继续传方向，或等一拍让 B 跟上。';
-    else if (n.blocked.some(Boolean)) $('message').textContent = '停下的是位置，方向仍然传给了下一拍。';
+    else if (G.dock(l(), s, 0)) $('message').textContent = '橙灯已经到家，会停住。继续按方向或等待，帮蓝灯走到蓝色终点。';
+    else if (n.blocked.some(Boolean)) $('message').textContent = '碰到墙或关着的栅门，会留在原地。你按的方向仍会传给蓝灯。';
   }
 }
 function showHint() {
   $('hint-panel').hidden = false; $('hint').setAttribute('aria-expanded', 'true');
   const docked = G.dock(l(), s, 0) || G.dock(l(), s, 1);
-  const ideas = docked ? ['一盏灯已经到达，留在亭里不会再移动。看看另一盏的路线。', '先看待执行的箭头。如果那一步已经能让它到达，就让这一拍过去。'] : l().ideas || [l().hint, '先看蓝光下一拍的虚线位置，再想橙光现在要走哪里。'];
-  $('hint-label').textContent = ['想一想', '观察这里', '只看下一拍'][Math.min(hintStage, 2)];
+  const ideas = docked ? ['一盏灯已经到家，不会再移动。看看另一盏还需要哪个方向。', '看蓝灯「下次」后面的箭头。如果这个方向能让它到终点，点「等一下」就能让它走。'] : DuetCopy[level].ideas;
+  $('hint-label').textContent = ['先给一点思路', '再看这里', '下一步可以这样走'][Math.min(hintStage, 2)];
   if (hintStage < 2) {
-    $('hint-text').textContent = ideas[hintStage]; $('hint-more').textContent = hintStage === 0 ? '再给一点线索' : '告诉我下一拍';
+    $('hint-text').textContent = ideas[hintStage]; $('hint-more').textContent = hintStage === 0 ? '再给一点线索' : '告诉我下一步';
   } else {
     const path = G.solve(l(), s);
     const remaining = C.targets(l()).limit - s.steps;
-    $('hint-text').textContent = !path ? '目前的站位走不通了。撤销几拍，回到两人都还没进亭的时候。' : path.length > remaining ? `从这里至少还要 ${path.length} 拍，本轮只剩 ${remaining} 拍。先撤销几拍，换一种配合。` : `下一拍可以试试「${words[path[0]]}」。A 现在执行；B 仍执行上面已排好的方向。`;
+    $('hint-text').textContent = !path ? '这个位置已经走不通了。退几步，让还需要踩机关的灯先别进终点。' : path.length > remaining ? `从这里至少还要 ${path.length} 步，本轮只剩 ${remaining} 步。先退几步，再换一种配合。` : `下一步试试「${path[0] === 'W' ? '等一下' : words[path[0]]}」。橙灯做这次的操作，蓝灯做上一次的「${words[s.last]}」。`;
     $('hint-more').textContent = '收起，自己试试';
   }
   $('world').classList.toggle('hint-focus', hintStage === 1);
 }
 document.querySelectorAll('[data-d]').forEach(b => b.onclick = () => act(b.dataset.d));
-document.querySelectorAll('[data-chapter]').forEach(b => b.onclick = () => load(Number(b.dataset.chapter) === 1 ? 0 : 7));
-$('undo').onclick = $('recover').onclick = () => { if (busy || !history.length) return; s = history.pop(); discovered = false; $('ending').hidden = true; hideHint(); render(); $('message').classList.remove('insight'); $('message').textContent = '回到上一拍，位置、机关、待执行动作和拍数都恢复了。'; };
-$('restart').onclick = $('replay').onclick = () => load(level);
-$('next').onclick = () => load(level === G.levels.length - 1 ? 7 : level + 1);
+document.querySelectorAll('[data-chapter]').forEach(b => b.onclick = () => { load(Number(b.dataset.chapter) === 1 ? 0 : 7); $('selection').hidden = false; $('levels-toggle').setAttribute('aria-expanded', 'true'); });
+$('levels-toggle').onclick = () => { $('selection').hidden = !$('selection').hidden; $('levels-toggle').setAttribute('aria-expanded', !$('selection').hidden); };
+$('undo').onclick = $('recover').onclick = () => { if (busy || !history.length) return; s = history.pop(); discovered = false; $('ending').hidden = true; hideHint(); render(); $('message').classList.remove('insight'); if (!learning) $('message').textContent = '已退一步。位置、机关、蓝灯下次的动作和步数都恢复了。'; };
+$('restart').onclick = () => learning ? startLearning() : load(level);
+$('replay').onclick = () => learning ? returnRoom ? load(returnRoom) : startLearning() : load(level);
+$('next').onclick = () => load(learning ? 0 : level === G.levels.length - 1 ? 7 : level + 1);
+$('learn-start').onclick = startLearning;
+$('learn-skip').onclick = () => { if (busy) return; rememberLesson('skipped'); load(returnRoom); };
 $('hint').onclick = () => { hintStage = 0; showHint(); };
 $('hint-more').onclick = () => { if (hintStage >= 2) hideHint(); else { hintStage++; showHint(); } };
 $('hint-close').onclick = hideHint;
@@ -177,4 +244,6 @@ document.addEventListener('keydown', e => {
   const d = { ArrowRight: 'R', ArrowLeft: 'L', ArrowUp: 'U', ArrowDown: 'D', ' ': 'W', w: 'U', a: 'L', s: 'D', d: 'R' }[e.key];
   if (d) { e.preventDefault(); act(d); }
 });
-load(Math.max(0, Math.min(G.levels.length - 1, (Number(new URLSearchParams(location.search).get('room')) || 1) - 1)));
+const openLesson = L.shouldStart(location.search, lessonSeen, completed.length > 0 || Object.keys(bests).length > 0);
+load(returnRoom);
+if (openLesson) startLearning();

@@ -3,31 +3,32 @@
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#dce8e4">
-  <title>一拍之遥 · 水庭与默契</title><link rel="stylesheet" href="style.css?v=5">
+  <title>一拍之遥 · 你走一步，它晚一步</title><link rel="stylesheet" href="style.css?v=6">
 </head>
 <body><main>
-  <header><a href="../courtyard/">← 其他原型</a><span>水庭 · <b id="star-total">0 / 33 星</b></span><button id="sound" aria-pressed="false">声音 关</button></header>
-  <div class="intro"><span class="eyebrow">TWO LIGHTS · ONE RHYTHM</span><h1>一拍之遥</h1><p>你的这一步，是它的下一步。</p></div>
-  <div class="chapters" aria-label="选择章节"><button data-chapter="1">初遇 <small>1—7</small></button><button data-chapter="2">默契 <small>8—11</small></button></div>
-  <nav id="levels" aria-label="选择房间"></nav>
+  <header><a href="../courtyard/">← 其他原型</a><b id="star-total">0 / 33 星</b><button id="sound" aria-pressed="false">声音 关</button></header>
+  <div class="intro"><h1>一拍之遥</h1><p>你控制橙灯，蓝灯重复你上一次的操作。</p></div>
+  <div class="learn-entry"><button id="learn-start">新手练习 · 跟着试 5 下</button><button id="levels-toggle" aria-expanded="false" aria-controls="selection">选关 ⌄</button></div>
+  <div id="selection" hidden><div class="chapters" aria-label="选择章节"><button data-chapter="1">初遇 <small>1—7</small></button><button data-chapter="2">默契 <small>8—11</small></button></div><nav id="levels" aria-label="选择房间"></nav></div>
   <section class="stage">
-    <div class="room"><div><span id="chapter"></span><h2 id="name"></h2></div><div class="move-count"><strong id="count">0 拍</strong><span id="remaining"></span></div></div>
+    <div class="room"><div><span id="chapter"></span><h2 id="name"></h2></div><div class="move-count"><strong id="count">0 步</strong><span id="remaining"></span></div><button id="learn-skip" class="text-button" hidden>跳过引导</button></div>
+    <div class="objective"><span>目标：把两盏灯送到<strong>同色终点</strong></span><b id="arrivals">0 / 2 到达</b></div>
     <div class="challenge" aria-label="步数与星级目标">
       <div class="challenge-heading"><span id="optimal"></span><span id="best"></span></div>
       <div id="beat-track" class="beat-track" aria-hidden="true"></div>
       <div class="star-targets"><span id="target-three"></span><span id="target-two"></span><span id="target-one"></span></div>
     </div>
-    <div class="queue"><span><i class="orange"></i>A 橙光 · 现在走</span><span class="thread">→</span><span><i class="blue"></i>B 蓝光 · <b id="pending">等一拍</b></span></div>
+    <div class="queue" aria-label="两盏灯分别怎么走"><div id="role-orange"><span><i class="orange"></i>橙灯 · 你来控制</span><b id="current">按方向就走</b></div><div id="role-blue"><span><i class="blue"></i>蓝灯 · 慢一步</span><b id="pending">第一次先不动</b></div></div>
     <div class="world-wrap">
-      <svg id="world" viewBox="0 25 560 405" role="img" aria-label="双光机关地图"></svg>
-      <div id="ending" hidden><span id="result-label">TOGETHER</span><div id="end-stars" class="result-stars"></div><h2 id="end-title">这次，我们配合上了。</h2><p id="end-score"></p><p id="endtext"></p><button id="recover" hidden>撤销一拍</button><button id="next">下一个房间 →</button><button id="replay">再试一次</button></div>
+      <svg id="world" viewBox="0 25 560 405" role="img" aria-label="橙灯与蓝灯各自走向同色终点的地图"></svg>
+      <div id="ending" hidden><span id="result-label">一起到家</span><div id="end-stars" class="result-stars"></div><h2 id="end-title">两盏灯都到家了</h2><p id="end-score"></p><p id="endtext"></p><button id="recover" hidden>退一步，再想想</button><button id="next">下一关 →</button><button id="replay">再试一次</button></div>
     </div>
     <div id="legend" class="legend" hidden><span>实线光环 · 正在照看</span><span>余 1 拍 · 还能通过一次行动</span></div>
-    <p id="message" role="status" aria-live="polite"></p>
-    <div class="controls"><div class="pad"><button data-d="U" aria-label="向上">↑</button><button data-d="L" aria-label="向左">←</button><button data-d="D" aria-label="向下">↓</button><button data-d="R" aria-label="向右">→</button></div><button data-d="W" class="wait">Ⅱ <span>等一拍<small>让上一步抵达</small></span></button></div>
-    <div class="tools"><button id="undo">↶ 撤销</button><button id="hint" aria-expanded="false" aria-controls="hint-panel">给我一点思路</button><button id="restart">↻ 重来</button></div>
+    <div class="guidance" aria-live="polite" aria-atomic="true"><div id="learn-progress" hidden></div><h3 id="learn-title" hidden></h3><p id="message"></p></div>
+    <div class="controls"><div class="pad"><button data-d="U" aria-label="向上">↑</button><button data-d="L" aria-label="向左">←</button><button data-d="D" aria-label="向下">↓</button><button data-d="R" aria-label="向右">→</button></div><button data-d="W" class="wait">Ⅱ <span>等一下<small>橙灯停，蓝灯做上一步</small></span></button></div>
+    <div class="tools"><button id="undo">↶ 退一步</button><button id="hint" aria-expanded="false" aria-controls="hint-panel">看提示</button><button id="restart">↻ 重玩</button></div>
     <aside id="hint-panel" class="hint-panel" hidden aria-label="逐层提示"><div class="hint-heading"><span id="hint-label">想一想</span><button id="hint-close" aria-label="收起提示">×</button></div><p id="hint-text" aria-live="polite"></p><button id="hint-more">再给一点线索</button></aside>
   </section>
-  <details><summary>操作与机关说明</summary><p>① 方向控制橙光，蓝光执行上一拍的方向。蓝光旁的虚线圈就是它下一拍的位置。</p><p>② 踩住对应颜色、形状的机关会开门；离开后仍保持一拍。碰墙或关闭的门只会停住，但方向仍传给蓝光。长闸门的各段由同一个机关控制。</p><p>标有「留门」的机关踩过后永久开门；标有「双灯」的两个灯座分别点亮后才开门，点亮会保留。</p><p>③ 两人都进入各自的小亭即过关。先到的留在亭里，仍可传递指令。空格等一拍，Z 撤销，没有时间限制。</p><p>④ 最优拍数通关获三星，多 1–2 拍获二星，多 3–4 拍获一星；到上限还没到齐，本轮暂停，可撤销或重试。等待与碰墙都计一拍，撤销退回拍数，不罚星。</p><p>最佳拍数与星级只保存在当前浏览器，可自由选关。旧版完成记录保留，再玩一次才记录星级。提示先给思路，再给观察线索；你选择后才显示下一步，使用提示不扣星。</p></details>
+  <details><summary>操作、机关与星级说明</summary><p><strong>怎么走：</strong>方向键或 WASD 控制橙灯；蓝灯做的是你上一次的操作。「等一下」让橙灯不动，蓝灯照常做上一步。空格也能等待，Z 可以退一步。虚线圈预告蓝灯下次的位置。</p><p><strong>怎么过关：</strong>两盏灯各自进入同色终点。先到的会留在那里，继续按按钮也不会离开；你可以继续给另一盏灯传方向。</p><p><strong>怎么开门：</strong>地上机关和栅门的颜色、形状相同，连线表示对应关系。普通机关踩住就开门，离开后再开一步。常开机关踩过一次就够；双灯机关两个都踩过才开门，不用同时站住。</p><p><strong>碰墙怎么办：</strong>位置停住，按下的方向仍会传给蓝灯。这也可以用来配合。</p><p><strong>怎么拿星：</strong>最优步数通关获三星，多 1–2 步获二星，多 3–4 步获一星。按一次方向或等待算一步，碰墙也算。步数用完可以退一步或重玩；看提示不扣星，没有倒计时。</p><p>星级和最佳步数保存在当前浏览器。引导不计分，旧版完成记录保留。想再体验引导，可点上方「跟着试 5 下」。</p></details>
   <footer>一个人停下，另一个人也可以向前。</footer>
-</main><script src="engine.js?v=5"></script><script src="challenge.js?v=5"></script><script src="art.js?v=5"></script><script src="app.js?v=5"></script></body></html>
+</main><script src="engine.js?v=6"></script><script src="challenge.js?v=6"></script><script src="learn.js?v=6"></script><script src="copy.js?v=6"></script><script src="art.js?v=6"></script><script src="app.js?v=6"></script></body></html>
